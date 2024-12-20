@@ -6,7 +6,7 @@ import Navbar from "./components/Navbar";
 import Hero from "./components/Hero";
 import About from "./components/About";
 import Monitoring from "./components/Monitoring";
-import StreamPage from "./components/Streampage"; // Import StreamPage
+import StreamPage from "./components/Streampage";
 
 function App() {
   const [array, setArray] = useState([]);

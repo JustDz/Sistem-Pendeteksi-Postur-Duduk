@@ -1,128 +1,179 @@
-import React, { useRef, useState } from "react";
-import { useNavigate } from "react-router-dom"; // Import useNavigate
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const StreamPage = () => {
   const navigate = useNavigate();
-  const videoRef = useRef<HTMLVideoElement | null>(null);
   const [streamingError, setStreamingError] = useState<string | null>(null);
   const [diagnosis, setDiagnosis] = useState<string>("Baik");
-  const [saran, setSaran] = useState<string>("Pastikan posisi tubuh tegak dan mata sejajar dengan layar.");
+  const [saran, setSaran] = useState<string>(
+    "Pastikan posisi tubuh tegak dan mata sejajar dengan layar."
+  );
   const [isStreaming, setIsStreaming] = useState<boolean>(false);
+  const [videoSource, setVideoSource] = useState<string>("");
+  const [isLoading, setIsLoading] = useState<boolean>(false); // State untuk loading spinner
+
+  useEffect(() => {
+    setVideoSource("http://localhost:8080/video_feed");
+  }, []);
 
   const startStreaming = async () => {
+    setIsLoading(true);
+    setStreamingError(null); // Reset error state
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: false,
+      const response = await fetch("http://localhost:8080/start_stream", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
       });
 
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play();
+      if (!response.ok) {
+        throw new Error("Gagal memulai streaming.");
       }
 
-      setDiagnosis("Baik");
-      setSaran("Pastikan posisi tubuh tegak dan mata sejajar dengan layar.");
+      const result = await response.json();
+      console.log(result.message);
       setIsStreaming(true);
     } catch (error) {
-      console.error("Error accessing media devices:", error);
-      setStreamingError("Failed to access camera. Please check permissions.");
+      console.error("Error starting streaming:", error);
+      setStreamingError("Gagal memulai streaming.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const stopStreaming = () => {
-    if (videoRef.current && videoRef.current.srcObject) {
-      const stream = videoRef.current.srcObject as MediaStream;
-      const tracks = stream.getTracks();
-      tracks.forEach((track) => track.stop());
-      videoRef.current.srcObject = null;
-    }
+  const stopStreaming = async () => {
+    setIsLoading(true);
+    setStreamingError(null); // Reset error state
+    try {
+      const response = await fetch("http://localhost:8080/stop_stream", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
 
-    setIsStreaming(false);
+      if (!response.ok) {
+        throw new Error("Gagal menghentikan streaming.");
+      }
+
+      const result = await response.json();
+      console.log(result.message);
+      setIsStreaming(false);
+    } catch (error) {
+      console.error("Error stopping streaming:", error);
+      setStreamingError("Gagal menghentikan streaming.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  // Fungsi untuk kembali ke halaman utama
   const handleBack = () => {
-    navigate("/"); // Ganti dengan path halaman utama Anda
+    navigate("/");
   };
 
   return (
-    <div
-      id="stream-result-container"
-      className="flex flex-col justify-center items-center min-h-screen bg-[#f7ebd2] py-5"
-    >
-      <div className="flex flex-row gap-10 w-full max-w-7xl mx-auto justify-center items-start">
-        {/* Stream Box - Kiri */}
+    <div className="fixed top-0 w-full z-50 h-[100vh] bg-body-clr">
+      {/* Navbar */}
+      <nav className="bg-transparent shadow-lg w-full">
+        <div className="border-b mx-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center">
+              <h1 className="text-xl font-bold font-text text-heading-clr">
+                Posture Check
+              </h1>
+            </div>
+            <button
+              onClick={handleBack}
+              className="font-text text-heading-clr flex items-center justify-center rounded-lg font-bold py-2 px-4 bg-violet-500 hover:bg-violet-600 transition-colors">
+              Kembali ke Home
+            </button>
+          </div>
+        </div>
+        </div>
+      </nav>
+
+      {/* Main Content */}
+      <main className="py-12">
         <div
-          id="video-stream"
-          className="flex flex-col items-center p-5 rounded-lg shadow-lg text-center bg-[#fcf5e6] w-2/3"
-        >
-          <h2 className="text-2xl font-bold text-[#333] mb-5">Live Streaming</h2>
-          <div className="stream-box mb-7 rounded-lg overflow-hidden bg-[#fcf5e6] w-full h-[450px]">
-            <video
-              ref={videoRef}
-              className="w-full h-full object-cover rounded-lg"
-              autoPlay
-              muted
-              playsInline
-              style={{
-                backgroundColor: isStreaming ? "transparent" : "#f7ebd2",
-              }}
-            />
-          </div>
+          id="stream-result-container"
+          className="flex flex-col items-center">
+          <div className="flex flex-row gap-10 w-full max-w-7xl mx-auto justify-center items-start px-4">
+            {/* Stream Box - Kiri */}
+            <div
+              id="video-stream"
+              className="flex flex-col items-center p-5 rounded-lg shadow-lg text-center bg-gray-800 w-2/3 h-[80vh]">
+              <h2 className="font-text text-heading-clr text-2xl font-bold mb-5">
+                Live Streaming
+              </h2>
+              <div className="stream-box mb-7 rounded-lg overflow-hidden bg-[#fcf5e6] w-full h-[450px]">
+                {isStreaming ? (
+                  <img
+                    src={videoSource}
+                    alt="Live Streaming"
+                    className="w-full h-full object-cover rounded-lg"
+                  />
+                ) : (
+                  <div className="font-text text-body-clr w-full h-full bg-gray-300 flex justify-center items-center rounded-lg">
+                    <p>Menunggu streaming...</p>
+                  </div>
+                )}
+              </div>
 
-          {/* Tombol kontrol streaming di dalam box video */}
-          <div className="controls flex justify-center gap-5 mt-4 w-full">
-            {!isStreaming ? (
-              <button
-                onClick={startStreaming}
-                className="group flex h-min items-left disabled:opacity-50 disabled:hover:opacity-50 hover:opacity-95 justify-center ring-none rounded-lg shadow-lg font-semibold py-2 px-4 font-dm focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 bg-violet-500 border-b-violet-700 disabled:border-0 disabled:bg-violet-500 disabled:text-white ring-white text-white border-b-4 hover:border-0 active:border-0 hover:text-gray-100 active:bg-violet-800 active:text-gray-300 focus-visible:outline-violet-500 text-sm sm:text-base dark:bg-gray-700 dark:border-gray-700 dark:border-b-gray-900"
-              >
-                Mulai Streaming
-              </button>
-            ) : (
-              <button
-                onClick={stopStreaming}
-                className="group flex h-min items-left disabled:opacity-50 disabled:hover:opacity-50 hover:opacity-95 justify-center ring-none rounded-lg shadow-lg font-semibold py-2 px-4 font-dm focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 bg-violet-500 border-b-violet-700 disabled:border-0 disabled:bg-violet-500 disabled:text-white ring-white text-white border-b-4 hover:border-0 active:border-0 hover:text-gray-100 active:bg-violet-800 active:text-gray-300 focus-visible:outline-violet-500 text-sm sm:text-base dark:bg-gray-700 dark:border-gray-700 dark:border-b-gray-900"
-              >
-                Hentikan Streaming
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Kotak Output dan Saran - Kanan */}
-        <div className="flex flex-col justify-start bg-[#fcf5e6] p-5 rounded-lg shadow-lg w-1/3 h-[450px]">
-          <div className="flex flex-col gap-5">
-            <div>
-              <h3 className="text-xl font-semibold text-[#333] mb-3">Diagnosis</h3>
-              <div className={`p-3 rounded-lg ${diagnosis === "Baik" ? "bg-green-100" : "bg-red-100"}`}>
-                <p className="text-lg">{diagnosis}</p>
+              {/* Tombol kontrol streaming */}
+              <div className="controls flex justify-center gap-5 mt-4 w-full">
+                {!isStreaming ? (
+                  <button
+                    onClick={startStreaming}
+                    disabled={isLoading}
+                    className="font-text text-heading-clr group flex items-center justify-center rounded-lg shadow-lg font-semibold py-2 px-4 bg-violet-500 disabled:opacity-50">
+                    {isLoading ? "Memulai..." : "Mulai Streaming"}
+                  </button>
+                ) : (
+                  <button
+                    onClick={stopStreaming}
+                    disabled={isLoading}
+                    className="font-text text-heading-clr group flex items-center justify-center rounded-lg shadow-lg font-semibold py-2 px-4 bg-violet-500 disabled:opacity-50">
+                    {isLoading ? "Menghentikan..." : "Hentikan Streaming"}
+                  </button>
+                )}
               </div>
             </div>
 
-            <div>
-              <h3 className="text-xl font-semibold text-[#333] mb-3">Saran Posisi Duduk</h3>
-              <div className="p-3 rounded-lg bg-yellow-100">
-                <p className="text-lg">{saran}</p>
+            {/* Kotak Output dan Saran - Kanan */}
+            <div className="flex flex-col justify-start bg-gray-800 p-5 rounded-lg shadow-lg w-1/3 h-[80vh]">
+              <div className="flex flex-col gap-5">
+                <div className="font-text">
+                  <h3 className="text-xl font-semibold text-[#333] mb-3">
+                    Diagnosis
+                  </h3>
+                  <div
+                    className={`p-3 rounded-lg ${
+                      diagnosis === "Baik" ? "bg-green-100" : "bg-red-100"
+                    }`}>
+                    <p className="text-lg">{diagnosis}</p>
+                  </div>
+                </div>
+
+                <div className="font-text">
+                  <h3 className="text-xl font-semibold text-[#333] mt-10">
+                    Saran Posisi Duduk
+                  </h3>
+                  <div className="mt-2 p-3 rounded-lg bg-yellow-100">
+                    <p className="text-lg">{saran}</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
+
+          {/* Pesan Error */}
+          {streamingError && (
+            <p className="text-red-500 mt-4">{streamingError}</p>
+          )}
         </div>
-      </div>
-
-      {/* Tombol "Back" untuk kembali ke halaman utama */}
-      <div className="mt-4">
-        <button
-          onClick={handleBack}
-          className="group flex h-min items-left disabled:opacity-50 disabled:hover:opacity-50 hover:opacity-95 justify-center ring-none rounded-lg shadow-lg font-semibold py-2 px-4 font-dm focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 bg-violet-500 border-b-violet-700 disabled:border-0 disabled:bg-violet-500 disabled:text-white ring-white text-white border-b-4 hover:border-0 active:border-0 hover:text-gray-100 active:bg-violet-800 active:text-gray-300 focus-visible:outline-violet-500 text-sm sm:text-base dark:bg-gray-700 dark:border-gray-700 dark:border-b-gray-900"
-        >
-          Kembali ke Halaman Utama
-        </button>
-      </div>
-
-      {/* Pesan Error */}
-      {streamingError && <p className="text-red-500 mt-4">{streamingError}</p>}
+      </main>
     </div>
   );
 };
