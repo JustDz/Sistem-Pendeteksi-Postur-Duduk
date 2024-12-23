@@ -43,9 +43,12 @@ url = 'http://192.168.179.201/cam-hi.jpg'
 # Global variable for streaming control
 is_streaming = True
 
+# Tambahkan variabel global untuk menyimpan diagnosis terbaru
+current_diagnosis_sit = "Tidak tersedia"
+
 def generate_frames():
     """Mengambil frame dari URL, memprosesnya dengan Mediapipe, dan mengembalikan hasilnya ke klien."""
-    global is_streaming
+    global is_streaming, current_diagnosis_sit
 
     with mp_holistic.Holistic(min_detection_confidence=0.3, min_tracking_confidence=0.3) as holistic:
         while is_streaming:
@@ -102,8 +105,8 @@ def generate_frames():
                     proba_spine = model_spine.predict_proba(pose_df)[0]
                     
                     # Prediksi model sit
-                    result_predict_sit = model_sit.predict(pose_df)[0]
-                    ref_deteksi_sit.set(result_predict_sit)
+                    current_diagnosis_sit = model_sit.predict(pose_df)[0]
+                    ref_deteksi_sit.set(current_diagnosis_sit)
                     proba_sit = model_sit.predict_proba(pose_df)[0]
 
                     # Tampilkan hasil prediksi di frame
@@ -139,6 +142,15 @@ def stop_feed():
     is_streaming = False
     return jsonify({"message": "Streaming dihentikan"}), 200
 
+@app.route('/get_diagnosis', methods=['GET'])
+def get_diagnosis():
+    # Contoh data diagnosis
+    saran = "Pertahankan" if current_diagnosis_sit
+    response = {
+        "diagnosis": current_diagnosis_sit,
+        "saran": "Pertahankan posisi tubuh Anda tetap tegak."
+    }
+    return jsonify(response)
 
 if __name__ == '__main__':
     app.run(port=8080, debug=True)

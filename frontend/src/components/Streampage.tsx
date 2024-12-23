@@ -14,6 +14,27 @@ const StreamPage = () => {
   );
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
+  // Fungsi untuk mengambil data dari Flask API
+  const fetchDiagnosis = async () => {
+    try {
+      const response = await fetch("http://localhost:5000/get_diagnosis");
+      if (!response.ok) {
+        throw new Error("Gagal mengambil data diagnosis");
+      }
+      const data = await response.json();
+      setDiagnosis(data.diagnosis); // Update state diagnosis
+      setSaran(data.saran); // Update state saran
+    } catch (error) {
+      console.error("Error fetching diagnosis:", error);
+      setStreamingError("Gagal mengambil data diagnosis.");
+    }
+  };
+
+  // Panggil fetchDiagnosis saat komponen pertama kali dirender
+  useEffect(() => {
+    fetchDiagnosis();
+  }, []);
+
   const stopStreaming = async () => {
     setIsLoading(true);
     setStreamingError(null); // Reset error state
