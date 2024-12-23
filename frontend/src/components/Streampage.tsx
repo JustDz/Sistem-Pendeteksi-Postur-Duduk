@@ -4,12 +4,14 @@ import { useNavigate } from "react-router-dom";
 const StreamPage = () => {
   const navigate = useNavigate();
   const [streamingError, setStreamingError] = useState<string | null>(null);
-  const [diagnosis, setDiagnosis] = useState<string>("Baik");
+  const [diagnosis, setDiagnosis] = useState<string>("Buruk");
   const [saran, setSaran] = useState<string>(
     "Pastikan posisi tubuh tegak dan mata sejajar dengan layar."
   );
   const [isStreaming, setIsStreaming] = useState<boolean>(false);
-  const [videoSource, setVideoSource] = useState<string>("http://localhost:8080/video_feed");
+  const [videoSource, setVideoSource] = useState<string>(
+    "http://localhost:8080/video_feed"
+  );
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const stopStreaming = async () => {

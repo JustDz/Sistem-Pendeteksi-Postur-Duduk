@@ -8,6 +8,8 @@ import firebase_admin
 from firebase_admin import credentials, db
 import pandas as pd
 import urllib.request
+from datetime import datetime
+import pytz
 
 app = Flask(__name__)
 CORS(app)
@@ -17,7 +19,8 @@ mp_holistic = mp.solutions.holistic
 mp_drawing = mp.solutions.drawing_utils
 
 # Load model klasifikasi
-model = joblib.load("kelainan_tulang_classify.pkl")["Logistic Regression"]
+model_spine = joblib.load("kelainan_tulang_classify.pkl")["Logistic Regression"]
+model_sit = joblib.load("good_bad.pkl")["Logistic Regression"]
 
 # Firebase setup
 if not firebase_admin._apps:
@@ -26,15 +29,13 @@ if not firebase_admin._apps:
         'databaseURL': 'https://posture-chek-default-rtdb.asia-southeast1.firebasedatabase.app/'
     })
 
-# Referensi ke database Firebase
-ref = db.reference('/')
 
 # Kolom untuk data pose
 num_coords = 33
-kolom = ['x{}'.format(i) for i in range(num_coords)] + \
-        ['y{}'.format(i) for i in range(num_coords)] + \
-        ['z{}'.format(i) for i in range(num_coords)] + \
-        ['v{}'.format(i) for i in range(num_coords)]
+kolom = []
+
+for val in range(0, num_coords):
+    kolom += ['x{}'.format(val), 'y{}'.format(val), 'z{}'.format(val), 'v{}'.format(val)]
 
 # URL video streaming
 url = 'http://192.168.179.201/cam-hi.jpg'
@@ -67,13 +68,24 @@ def generate_frames():
 
                 # Gambar landmark pose
                 if results.pose_landmarks:
-                    mp_drawing.draw_landmarks(
-                        image,
-                        results.pose_landmarks,
-                        mp_holistic.POSE_CONNECTIONS,
-                        mp_drawing.DrawingSpec(color=(245, 117, 66), thickness=2, circle_radius=4),
-                        mp_drawing.DrawingSpec(color=(245, 66, 230), thickness=2, circle_radius=2)
-                    )
+                    # mp_drawing.draw_landmarks(
+                    #     image,
+                    #     results.pose_landmarks,
+                    #     mp_holistic.POSE_CONNECTIONS,
+                    #     mp_drawing.DrawingSpec(color=(245, 117, 66), thickness=2, circle_radius=4),
+                    #     mp_drawing.DrawingSpec(color=(245, 66, 230), thickness=2, circle_radius=2)
+                    # )
+                    
+                    # waktuu timestamp
+                    tz = pytz.timezone('Asia/Jakarta')
+                    dt = datetime.now(tz)
+                    timestamp = dt.timestamp()
+                    dt = datetime.fromtimestamp(timestamp, pytz.timezone('Asia/Jakarta'))
+                    
+                    # referensi
+                    ref_deteksi_spine = db.reference(f'/deteksi/spine/{dt.strftime("%Y-%m-%d %H:%M:%S")}')
+                    ref_deteksi_sit = db.reference(f'/deteksi/sit/{dt.strftime("%Y-%m-%d %H:%M:%S")}')
+                    ref_coor = db.reference(f'/coord/{dt.strftime("%Y-%m-%d %H:%M:%S")}')
 
                     # Ekstrak landmark
                     pose_landmarks = results.pose_landmarks.landmark
@@ -81,18 +93,22 @@ def generate_frames():
 
                     # Konversi ke DataFrame
                     data_dict = {kol: [val] for kol, val in zip(kolom, pose_row)}
+                    ref_coor.set(data_dict)
                     pose_df = pd.DataFrame(data_dict)
 
-                    # Prediksi model
-                    result_predict = model.predict(pose_df)[0]
-                    proba = model.predict_proba(pose_df)[0]
-
-                    # Simpan ke Firebase
-                    ref.set(data_dict)
+                    # Prediksi model spine
+                    result_predict_spine = model_spine.predict(pose_df)[0]
+                    ref_deteksi_spine.set(result_predict_spine)
+                    proba_spine = model_spine.predict_proba(pose_df)[0]
+                    
+                    # Prediksi model sit
+                    result_predict_sit = model_sit.predict(pose_df)[0]
+                    ref_deteksi_sit.set(result_predict_sit)
+                    proba_sit = model_sit.predict_proba(pose_df)[0]
 
                     # Tampilkan hasil prediksi di frame
-                    cv2.putText(image, f'CLASS: {result_predict}', (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 2)
-                    cv2.putText(image, f'PROB: {max(proba):.2f}', (10, 70), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
+                    # cv2.putText(image, f'CLASS: {result_predict}', (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 2)
+                    # cv2.putText(image, f'PROB: {max(proba):.2f}', (10, 70), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
 
                 # Encode frame sebagai JPEG
                 _, buffer = cv2.imencode('.jpg', image)
