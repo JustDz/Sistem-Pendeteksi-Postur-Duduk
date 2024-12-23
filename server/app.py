@@ -37,7 +37,7 @@ def video_feed():
         is_streaming = True
         if video_capture is None or not video_capture.isOpened():
             print("Initializing video capture...")
-            video_capture = cv2.VideoCapture(0)
+            video_capture = cv2.VideoCapture(1)
 
             # Cek apakah kamera dapat diakses
             if not video_capture.isOpened():
@@ -78,11 +78,11 @@ def start_stream():
     if not is_streaming:
         print("Starting streaming...")
         is_streaming = True
-        attempt = 0
+        attempt = 1
         while attempt < 3:  # Coba membuka kamera beberapa kali
             if video_capture is None or not video_capture.isOpened():
                 print("Initializing video capture...")
-                video_capture = cv2.VideoCapture(0)
+                video_capture = cv2.VideoCapture(1)
 
                 # Cek apakah kamera dapat diakses
                 if not video_capture.isOpened():

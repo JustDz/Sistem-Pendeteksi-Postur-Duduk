@@ -6,7 +6,7 @@ import { Reveal } from "../animate/Reveal";
 const Hero = () => {
   return (
     <section id="Hero">
-      <div className="bg-first-bg relative h-[100vh]" >
+      <div className="bg-first-bg relative h-[100vh]">
         <div className="absolute inset-0 opacity-15">
           <div
             className="w-full h-full"
@@ -31,7 +31,7 @@ const Hero = () => {
               <Reveal>
                 <h1 className="font-extrabold text-heading-clr tracking-wider text-9xl lg:leading-snug font-heading">
                   Sistem Pendeteksi <br />
-                  Postur Tubuh
+                  Postur Duduk
                 </h1>
               </Reveal>
 

@@ -10,16 +10,9 @@ const About = () => {
           {/* Max-width container with padding */}
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 ">
             <header className="text-center">
-              {/* Ensure that this element is centered properly */}
-              <Reveal>
-                <h2 className="mt-5 font-main text-xl text-red-600 font-semibold tracking-wide uppercase">
-                  About System
-                </h2>
-              </Reveal>
-
               {/*--------------- Pengenalan sistem ---------------*/}
               <Reveal>
-                <p className="items-center font-text tracking-wider text-font-clr my-5 text-6xl leading-8 font-extrabold sm:text-6xl text-center">
+                <p className="mt-10 items-center font-text tracking-wider text-font-clr my-5 text-6xl leading-8 font-extrabold sm:text-6xl text-center">
                   Pengenalan Sistem
                 </p>
               </Reveal>

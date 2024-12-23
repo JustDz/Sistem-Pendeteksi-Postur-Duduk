@@ -5,7 +5,7 @@ import { Reveal } from "../animate/Reveal";
 const DashboardMonitoring: React.FC = () => {
   return (
     <section id="Monitoring">
-      <div className="bg-body-clr text-white min-h-220">
+      <div className="bg-body-clr text-white min-h-220 ">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           {/* Header */}
           <Reveal>
