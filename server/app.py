@@ -6,7 +6,7 @@ import time
 app = Flask(__name__)
 CORS(app)
 
-# Initialize global variable for video capture
+# Initialize global variable for video 
 video_capture = None
 is_streaming = False
 
